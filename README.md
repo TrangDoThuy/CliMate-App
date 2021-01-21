@@ -2,7 +2,9 @@
 ## High Level Design
 
 ## NLP design
-- Input data: Dummy data in json file
+- Input data: 
++ You can run file get_data.py to get the data from NewsAPI. Please change the key API in url link to your key API if exceed the limit :))
+
 - 2 main points:
 + classification: ? how can we label articles
 + chatbot: answer questions related to environment and climate change
