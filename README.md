@@ -13,6 +13,7 @@ https://newsapi.org/
 + chatbot: answer questions related to environment and climate change
 
 Based on https://github.com/deepset-ai/haystack
+https://haystack.deepset.ai/docs/latest/documentstoremd
 ### Output:
 Use FastAPI to send data to mobile app backend
 
