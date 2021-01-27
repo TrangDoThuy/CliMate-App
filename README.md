@@ -22,21 +22,33 @@ Use FastAPI to send data to mobile app backend
 ](url)
 
 ## Mobile app part:
-### Environment set up:
+### 1. Environment set up:
 
-#### 1. Node.js: https://nodejs.org/en/ for backend part
-#### 2. VS Code: https://code.visualstudio.com/ for text editor
+#### Node.js: https://nodejs.org/en/ for backend part
+#### VS Code: https://code.visualstudio.com/ for text editor
 
 We may need some extensions for better programming:
 
 - Bracket Pair Colorizer
 - ES7 React/Redux/GraphQL/React-Native snippets
 - Prettier
-#### 3. git: https://git-scm.com/
-#### 4. Postman: https://www.postman.com/ to test API for backend
-#### 5. React Developer Tools: from chrome web store, when our project has website version
-#### 6. Redux DevTools: from chrome web store, to show whole application
-#### 7. Git Bash: for window user if you like
+#### git: https://git-scm.com/
+#### Postman: https://www.postman.com/ to test API for backend
+#### React Developer Tools: from chrome web store, when our project has website version
+#### Redux DevTools: from chrome web store, to show whole application
+#### Git Bash: for window user if you like
+
+### 2. Database: MongoDB
+
+We're using a cloud database
+
+- Install Mongoose package with NPM to interact with database
+
+### 3. Install dependencies and Setup Express
+
+- Type `npm init` in terminal in VSCode
+
+
 
 
 
