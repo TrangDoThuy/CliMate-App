@@ -182,3 +182,115 @@ For example: type "http://localhost:5000/api/users", the we will get User route
 
 In the Postman, we create 3 folder in collections: Posts, Profiles, and Users&Auth
 
+### 7. Creating the user model
+
+We will handle users registers and authentication. To interact with database, we need to create model for each resource.
+
+So, first, we will create "models" folder containing a file called User.js
+
+This file will have schema to hold different fields that we want
+
+```
+const mongoose = require('mongoose');
+
+const UserSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        require: true,
+        unique: true
+    },
+    password: {
+        type:String,
+        required: true
+    },
+    avatar:{
+        type: String
+    },
+    date: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+module.exports = User = mongoose.model('user', UserSchema);
+```
+
+### 8. Request & Body Validation
+In this step, we will use POST instead of GET in the routes/users.js file because we need to send name, email and password to register a user.
+
+We also need to init the middleware for the body parser, so we add 2 lines in the server.js file
+
+```
+// Init Middleware
+app.use(express.json({extended: false}));
+```
+
+By doing that, we are able to get the data in request.body
+
+When users endtered email and password, we need to validate these data
+
+We use `check` and `validationResult` from express
+
+Our routes/api/users.js should be changed to this:
+
+```
+const express = require('express');
+const router = express.Router(); 
+const {check, validationResult} = require("express-validator");
+
+// @route       POST api/users  
+// @desc        Register route 
+// @access      Public
+router.post('/',
+    [
+        check('name','Name is required')
+        .not()
+        .isEmpty(),
+        check('email','Please include a valid email').isEmail(),
+        check(
+            'password',
+            'Please enter a password with 6 or more characters'
+            ).isLength({min: 6})
+    ],
+    (req, res) => {
+        const errors = validationResult(req); 
+        if(!errors.isEmpty()){
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        res.send('User route')
+    }
+    );
+
+module.exports = router;
+```
+
+Now we can successfully send a post request to "api/users", then we save this request to Users & Auth in Postman Collection
+
+### 9. User registration
+- Check if user exists: we use `await User.findOne({email})` to find user by email
+```
+            let user = await User.findOne({email});
+            if(user){
+                res.status(400).json({error:[{msg:'Users already exists'}]});
+            }
+```
+
+  If you find this "DeprecationWarning: collection.ensureIndex is deprecated. Use createIndexes inste Use createIndexes instead.", go to config and change try block into this part
+  ```
+        await mongoose.connect(db,{
+            useNewUrlParser: true,
+            useCreateIndex: true
+        });
+        console.log('MongoDB Connected ...');
+  ```
+- Get users gravatar
+
+- Encrypt password
+
+- Return jsonwebtoken. We want that in the frontend, when users register, we want them to get logged in rightaway
+
