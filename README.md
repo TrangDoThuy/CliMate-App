@@ -289,8 +289,132 @@ Now we can successfully send a post request to "api/users", then we save this re
         console.log('MongoDB Connected ...');
   ```
 - Get users gravatar
+    first, we add package Gravatar
+    
+     `const gravatar = require('gravatar');`
 
+    We pass the user's email into a method and get the URL of the gavatar
+    
+    ```
+            const avatar = gravatar.url(email,{
+                s: '200', //size
+                r: 'pg',
+                d: 'mm'
+            })
+
+            user = new User({
+                name,
+                email,
+                avatar,
+                password
+            });
+    ```
+    
+    
 - Encrypt password
+`const bcrypt = require('bcryptjs');`
+
+We will need to use `salt`
+
+```
+            const salt = await bcrypt.genSalt(10);
+
+            user.password = await bcrypt.hash(password, salt);
+            
+            await user.save();
+```
+
+Alright!. Now you can use Postman to check our register feature.
 
 - Return jsonwebtoken. We want that in the frontend, when users register, we want them to get logged in rightaway
+ You can visit this website for more detail about jsonwebtoken https://jwt.io/
+ 
+ In our case, we want to send user ID to identify user with token
+ 
+ We need to first sign it, and pass our payload, or we send a response back to the client with that token
+ 
+ We also need to create a piece of middleware to verify the token, either allow the user to access if it verifies or send back a response when token is invalid
+ ```
+             const payload = {
+                user:{
+                    id: user.id
+                }
+            };
 
+            jwt.sign(
+                payload,
+                config.get('jwtSecret'),
+                {expiresIn:  360000},
+                (err, token)=>{
+                    if(err) throw err;
+                    res.json({ token});
+                }
+            );
+ ```
+ 
+  At this stage, when you try with Postman, you will receive a token. Try it out with https://jwt.io/
+ 
+
+### 10. Custome Auth Middleware & JWT Verify
+ We will create a middle ware by our own, but when we change to login with Facebook or Twitter, we will need to rewrite these code
+ We create a new folder called "middleware" and a file "auth.js"
+ 
+ ```
+const jwt = require('jsonwebtoken');
+const config = require('config');
+
+module.exports = function(req, res, next){
+    //Get token from header 
+    const token = req.header('x-auth-token');
+
+    // check if not token
+    if(!token){
+        return res.status(401).json({msg: 'No token, authorization denied'});
+    }
+
+    //verify token 
+    try{
+        const decoded = jwt.verify(token, config.get('jwtSecret'));
+
+        req.user = decoded.user;
+        next();
+    }catch(err){
+        res.status(401).json({ msg: 'Token is invalid'});
+    }
+
+};
+ ```
+ 
+ We have a little change in routes/api/auth.js
+ ```
+const express = require('express');
+const router = express.Router(); 
+
+const auth = require('../../middleware/auth');
+
+// @route       GET api/auth
+// @desc        Test route 
+// @access      Public
+router.get('/',auth,(req, res) => res.send('Auth route'));
+
+module.exports = router;
+ ```
+ 
+ Then you can use Postman, at `http://localhost:5000/api/auth`, with the key 'x-auth-token' and value is token you have received above.
+ 
+ When we want to get data from user except the password, we wanna add this function
+ ```
+ router.get('/',auth,async(req, res) => {
+    try{
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    }catch(err){
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+ ```
+ 
+ So now, if you try the Postman again with the token, you will get back the user's data
+ 
+ 
