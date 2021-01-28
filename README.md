@@ -418,3 +418,10 @@ module.exports = router;
  So now, if you try the Postman again with the token, you will get back the user's data
  
  
+### 11. User authetication/ Login route
+
+ This is quite similar as we had done in the register part. So we will reuse some code from routes/api/users.js
+ 
+ The difference is we need to match email and password
+ 
+ 
