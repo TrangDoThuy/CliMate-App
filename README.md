@@ -90,6 +90,8 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT,()=>console.log(`Server started on port ${PORT}`));
 ```
 
+We open terminal in VSCode, then type `npn run server`
+
 When you go to Postman, at GET type `http://localhost:5000` you will receive "API running"
 
 ### 5. Connect backend to database Mongo D.B Atlas
@@ -424,4 +426,101 @@ module.exports = router;
  
  The difference is we need to match email and password
  
+ we have routes/api/users.js like that:
+ 
+ ```
+ const express = require('express');
+const router = express.Router(); 
+const {check, validationResult} = require("express-validator");
+const jwt = require('jsonwebtoken');
+const config = require('config');
+const bcrypt = require('bcryptjs');
+
+const auth = require('../../middleware/auth');
+
+const User = require('../../models/User');
+
+// @route       GET api/auth
+// @desc        Test route 
+// @access      Public
+router.get('/',auth,async(req, res) => {
+    try{
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    }catch(err){
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route       POST api/auth
+// @desc        Authenticate user & get token
+// @access      Public
+router.post(
+    '/',
+    [
+        check('email','Please include a valid email').isEmail(),
+        check(
+            'password',
+            'Password is required'
+            ).exists()
+    ],
+    async (req, res) => {
+        const errors = validationResult(req); 
+        if(!errors.isEmpty()){
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const {email, password} = req.body;
+        
+        try{
+            // See if user exists
+            let user = await User.findOne({email});
+            if(!user){
+                return res
+                .status(400)
+                .json({error:[{msg:'Invalid Credentials'}]});
+            }
+
+            // Return jsonwebtoken
+
+            const isMatch = await bcrypt.compare(password, user.password);
+            if(!isMatch){
+                return res
+                .status(400)
+                .json({error:[{msg:'Invalid Credentials'}]}); 
+            }
+
+            const payload = {
+                user:{
+                    id: user.id
+                }
+            };
+
+            jwt.sign(
+                payload,
+                config.get('jwtSecret'),
+                {expiresIn:  360000},
+                (err, token)=>{
+                    if(err) throw err;
+                    res.json({ token});
+                }
+            );
+
+        }catch(err){
+            console.error(err.message);
+            res.status(500).send('Server error');
+        }
+
+
+
+
+    }
+    );
+
+
+module.exports = router;
+ ```
+ 
+ When we try in Postman with correct email and password , we will receive a token
  
