@@ -21,7 +21,7 @@ Use FastAPI to send data to mobile app backend
 ![Screenshot 2020-12-29 123610](https://user-images.githubusercontent.com/30380242/105354141-1922eb00-5c2b-11eb-8008-de6b0edebf83.jpg)
 ](url)
 
-## Mobile app part:
+## Environment set up and handle registration part:
 ### 1. Environment set up:
 
 #### Node.js: https://nodejs.org/en/ for backend part
@@ -524,3 +524,276 @@ module.exports = router;
  
  When we try in Postman with correct email and password , we will receive a token
  
+ Alright! We have done for the registration and login part :)
+ 
+ 
+## Users profile (Backend)
+### 1. Creating the profile model
+
+ First, we create Profile model like User model, and we will have user will a special type that is connected with User model
+ 
+ Our app is focusing on people who are interested in Environment and woring in Environment related field. We hope that we can connected those people and provide a forum for them to share their idea and knowledge, and after all they can find jobs from our forum.
+ 
+ So for the Profile model, we will have a lot of fields related to Education, Work exprience and Environment interestings.
+
+```
+const mongoose = require('mongoose');
+const ProfileSchema = new Mongoose.Schema({
+    user:{
+        type: mongoose.Types.ObjectId,
+        ref: 'user'
+    },
+    company:{
+        type: String
+    },
+    location:{
+        type: String
+    },
+    status:{ // student, researcher, environment enthusiast
+        type: String,
+        required: true
+    },
+    intro:{
+        type: String
+    },
+    interested:{// climate change, temperature increase
+        type:[String],
+        required: true
+    },
+    experience:[
+        {
+            title:{
+                type: String,
+                required: true
+            },
+            company:{
+                type: String,
+                required: true
+            },
+            location:{
+                type: String
+            },
+            from:{
+                type: Date,
+                required: true
+            },
+            to:{
+                type: Date
+            },
+            current:{
+                type: Boolean,
+                default: false
+            },
+            description:{
+                type: String
+            }
+        }
+    ],
+    education:[
+        {
+            school:{
+                type: String,
+                required: true
+            },
+            degree:{
+                type: String,
+                required: true
+            },
+            fieldOfStudy:{
+                type: String,
+                required: true
+            },
+            from:{
+                type: Date,
+                required: true
+            },
+            to:{
+                type: Date
+            },
+            current:{
+                type: Boolean,
+                default: false
+            },
+            description:{
+                type: String
+            }
+        }
+    ],
+    social:{
+        youtube:{
+            type: String
+        },
+        twitter:{
+            type: String
+        },
+        facebook:{
+            type: String
+        },
+        linkedin:{
+            type: String
+        },
+        instagram:{
+            type: String
+        }
+    },
+    date:{
+        type: Date,
+        default: Date.now
+    }
+});
+
+module.exports = Profile = mongoose.model('profile',ProfileSchema);
+```
+
+### 2. Get current user profile
+
+We will get profile based on user ID
+
+```
+const express = require('express');
+const router = express.Router(); 
+const auth = require('../../middleware/auth');
+
+const Profile = require('../../models/Profile');
+
+
+// @route       GET api/profile/me
+// @desc        Get current user profile
+// @access      Private
+router.get('/me',auth, async(req, res) => {
+    try{
+        const profile = await Profile.findOne({user: req.user.id}).populate('user', 
+        ['name','avatar']);
+
+        if(!profile){
+            return res.status(400).json({msg:'There is no profile for this user'})
+        }
+
+        res.json(profile);
+    } catch(err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+module.exports = router;
+```
+
+### 3. Create & Update profile routes
+
+For this field, two things required in the request are `status` and `interested`, 
+
+`status` means: students, professional, environmental enthusiast
+
+`interested` means: different fields of environment and climate change, thery are important for us to personalized articles for users.
+
+so we have this part to check out required fields
+
+```
+[auth,[
+        check('status','Status is required')
+        .not()
+        .isEmpty(),
+        check('interested','Interested field is required')
+        .not()
+        .isEmpty()
+    ]
+]
+```
+
+ We then build a profile object
+ 
+ ```
+         // Build profile object
+
+        const profileField = {};
+        profileField.user = req.user.id;
+        if(company) profileField.company = company;
+        if(location) profileField.location = location;
+        if(status) profileField.status = status;
+        if(intro) profileField.intro = intro;
+        if(interested) {
+            profileField.interested = interested.split(',').map(skill=>skill.trim());
+        }
+        
+        // Build social object
+        profileField.social = {};
+        if(youtube) profileField.social.youtube = youtube;
+        if(facebook) profileField.social.facebook = facebook;
+        if(twitter) profileField.social.twitter = twitter;
+        if(instagram) profileField.social.instagram = instagram;
+        if(linkedin) profileField.social.linkedin = linkedin;
+ ```
+ 
+ We find the user in Profile and update it with the new profileField
+ 
+ ```
+            let profile = await Profile.findOne({user: req.user.id});
+            if(profile){
+                //Update
+                profile = await Profile.findOneAndUpdate(
+                    {user: req.user.id},
+                    {$set: profileFields},
+                    {new: true}
+                );
+
+                return res.json(profile);
+            }
+ ```
+ If profile is not found, we will create new profile
+ ```
+             // create 
+            profile = new Profile(profileFields);
+            
+            await Profile.save(profile);
+            res.json(profile);
+ ```
+ 
+ Now you can use Postman to check the create new profile and update profile function.
+ 
+ ### 4. Get all profiles and profile by user ID
+ 
+ For the get all profiles, I am not quite sure we will use this use case for our app. But maybe, later we will use when we search for users by typing their name
+ 
+ ```
+// @route       GET api/profile
+// @desc        Get all profiles
+// @access      Public
+
+router.get('/',async(req, res)=>{
+    try {
+        const profiles = await Profile.find().populate('user',['name','avatar']);
+        res.json(profiles);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+})
+ ```
+ 
+ To get user by ID, we type
+ 
+ ```
+ // @route       GET api/profile/user/:user_id
+// @desc        Get profile by user ID
+// @access      Public
+
+router.get('/user/:user_id',async(req, res)=>{
+    try {
+        const profile = await Profile.findOne({user: req.params.user_id}).populate('user',['name','avatar']);
+       
+        if(!profile) 
+            return res.status(400).json({msg:'Profile is not found'});
+       
+        res.json(profile);
+    } catch (err) {
+        console.error(err.message);
+        if(err.kind == 'ObjectId'){
+            return res.status(400).json({msg:'Profile is not found'});
+        }
+        res.status(500).send('Server Error');
+    }
+});
+ ```
+ 
+
