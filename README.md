@@ -712,8 +712,10 @@ so we have this part to check out required fields
         if(location) profileField.location = location;
         if(status) profileField.status = status;
         if(intro) profileField.intro = intro;
-        if(interested) {
+        if(Array.isArray(interested)) {
             profileField.interested = interested.split(',').map(skill=>skill.trim());
+        }else{
+            profileField.interested = interested
         }
         
         // Build social object
